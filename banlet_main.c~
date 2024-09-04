@@ -1,0 +1,91 @@
+// banlet_main.c: main function which uses functions in banlet_funcs.c
+// to print messages in a "fontified" fashion.
+
+#include "banlet.h"
+
+int main(int argc, char *argv[]){
+  // PROVIDED: print a usage message and exit if no arguments are
+  // provided to the program.
+  if(argc < 2){
+    printf("usage: %s '<text>'\n",argv[0]);
+    printf("       %s '<text>' --fontfile <fontfile>\n",argv[0]);
+    printf("       %s --textfile <textfile>\n",argv[0]);
+    printf("       %s --textfile <textfile> --fontfile <fontfile>\n",argv[0]);
+    printf("Arguments can appear in any order only one of <text> or <textfile> can be used\n");
+    printf("\n");
+    printf("Note: In some shells, embedded newline \\n characters, require\n");
+    printf("the syntax $'text' as in\n");
+    printf("        %s $'HELLO\\nWORLD\\n!!!'\n",argv[0]);
+    printf("to be treated correctly. This is NOT necessary on grace.umd.edu\n");
+    printf("This is NOT necessary on grace.umd.edu where the syntax\n");
+    printf("        %s 'HELLO\\nWORLD\\n!!!'\n",argv[0]);
+    printf("will behave correctly to embed newlines due to tcsh being used.\n");
+    return 1;
+  }
+
+  // PROVIDED: Set default options
+  char *text = NULL;                  // text to print, from command line or file
+  int use_textfile = 0;               // free 'text' or not?
+  font_t *font = &font_standard;      // default to built in standard font
+  char *fontfile = NULL;              // font file to load (if specified)
+  char *textfile = NULL;
+
+  // REQUIRED: Command line parsing loop which handles --fontfile,
+  // --textfile, and text arguments, sets variables above
+  // appropriately.
+  for(int i=1; i<argc; i++){
+   
+     if(strcmp(argv[i], "--fontfile") == 0 && i + 1 < argc){
+      fontfile = argv[++i];
+    } else if(strcmp(argv[i], "--textfile") == 0 && i + 1 < argc){
+      textfile = argv[++i];
+      use_textfile = 1;
+    } else {
+      text = argv[i];
+    }
+  }
+
+  // Load font if specified
+  if(fontfile != NULL){
+    font = font_load(fontfile);
+    if(font == NULL){
+      fprintf(stderr, "Error loading font file '%s'\n", fontfile);
+      return 1;
+    }
+  }
+
+  // Load text from file if specified
+  if(textfile != NULL){
+    text = slurp_file(textfile);
+    if(text == NULL){
+      fprintf(stderr, "Error reading text file '%s'\n", textfile);
+      if(font != &font_standard){
+        font_free(font);
+      }
+      return 1;
+    }
+  }
+
+  // Check if text is available
+  if(text == NULL){
+    fprintf(stderr, "No text to print\n");
+    if(font != &font_standard){
+      font_free(font);
+    }
+    return 1;
+  }
+
+  // Call to print_fontified to print the banner text
+  print_fontified(text, font);
+
+  // Checks to free memory if needed
+  if(use_textfile){
+    free(text);
+  }
+  if(font != &font_standard){
+    font_free(font);
+  }
+
+  return 0;
+ 
+}
